@@ -7,6 +7,11 @@ export async function getLimits(t) {
   return limits || {};
 }
 
+export async function getLimitForList(t, listId) {
+  const limits = await getLimits(t);
+  return limits[listId]; // undefined if no limit set
+}
+
 export async function setLimitForList(t, listId, limit) {
   const limits = await getLimits(t);
   if (limit === null || limit === undefined || limit === "") {
@@ -14,7 +19,8 @@ export async function setLimitForList(t, listId, limit) {
   } else {
     limits[listId] = Number(limit);
   }
-  return t.set("board", "shared", "listLimits", limits);
+  await t.set("board", "shared", "listLimits", limits);
+  return limits;
 }
 
 export async function setAllLimits(t, limits) {
