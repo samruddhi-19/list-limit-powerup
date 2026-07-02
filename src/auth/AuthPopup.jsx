@@ -28,10 +28,33 @@ export default function AuthPopup({ t }) {
       // "private" scope: this token must never be readable by other members.
       await t.set("member", "private", "token", token);
       setStatus("success");
-      setTimeout(() => t.closePopup(), 600);
+      setTimeout(() => redirectAfterConnect(), 600);
     } catch (e) {
       setStatus("error");
     }
+  }
+
+  function redirectAfterConnect() {
+    const { redirect, listId } = t.getContext().arguments || {};
+
+    if (redirect === "settings") {
+      return t.popup({
+        title: "List Limits",
+        url: "./settings.html",
+        height: 300,
+      });
+    }
+
+    if (redirect === "list-limit" && listId) {
+      return t.popup({
+        title: "Set Card Limit",
+        url: "./list-limit.html",
+        height: 180,
+        args: { listId },
+      });
+    }
+
+    return t.closePopup();
   }
 
   function handleAuthorize() {

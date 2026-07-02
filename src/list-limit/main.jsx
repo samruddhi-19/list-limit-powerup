@@ -31,7 +31,16 @@ TrelloPowerUp.initialize({
       {
         icon: ICON,
         text: "List Limits",
-        callback: function (t) {
+        callback: async function (t) {
+          const token = await t.get("member", "private", "token");
+          if (!token) {
+            return t.popup({
+              title: "Connect Trello Account",
+              url: "./auth.html",
+              height: 160,
+              args: { redirect: "settings" },
+            });
+          }
           return t.popup({
             title: "List Limits",
             url: "./settings.html",
@@ -46,14 +55,22 @@ TrelloPowerUp.initialize({
     return [
       {
         text: "Set Card Limit",
-        callback: function (t) {
-          return t.list("id", "name").then(function (list) {
+        callback: async function (t) {
+          const token = await t.get("member", "private", "token");
+          const list = await t.list("id", "name");
+          if (!token) {
             return t.popup({
-              title: "Set Limit for " + list.name,
-              url: "./list-limit.html",
-              height: 180,
-              args: { listId: list.id },
+              title: "Connect Trello Account",
+              url: "./auth.html",
+              height: 160,
+              args: { redirect: "list-limit", listId: list.id },
             });
+          }
+          return t.popup({
+            title: "Set Limit for " + list.name,
+            url: "./list-limit.html",
+            height: 180,
+            args: { listId: list.id },
           });
         },
       },
