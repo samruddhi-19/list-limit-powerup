@@ -1,32 +1,20 @@
 /* global TrelloPowerUp */
 import { getLimits, getCardCount } from "../lib/limits.js";
+import { renameListWithCount } from "../lib/trelloApi.js";
 
 const ICON = "https://cdn-icons-png.flaticon.com/512/1828/1828884.png";
 
-function openListLimitPopup(t, list) {
-  return t.popup({
-    title: list.limit === undefined ? "Set Limit" : "Edit Limit",
-    url: "./list-limit.html",
-    height: 150,
-    args: { listId: list.id },
-  });
-}
-
 TrelloPowerUp.initialize({
   "authorization-status": async function (t) {
-    const authorized = await t.get("member", "private", "authorized");
-    if (authorized === undefined) {
-      await t.set("member", "private", "authorized", false);
-      return { authorized: false };
-    }
-    return { authorized: authorized === true };
+    const token = await t.get("member", "private", "token");
+    return { authorized: !!token };
   },
 
   "show-authorization": function (t) {
     return t.popup({
-      title: "Authorize List Limit Power-Up",
+      title: "Connect Trello Account",
       url: "./auth.html",
-      height: 200,
+      height: 160,
     });
   },
 
@@ -63,7 +51,7 @@ TrelloPowerUp.initialize({
             return t.popup({
               title: "Set Limit for " + list.name,
               url: "./list-limit.html",
-              height: 150,
+              height: 180,
               args: { listId: list.id },
             });
           });
@@ -72,56 +60,33 @@ TrelloPowerUp.initialize({
     ];
   },
 
-  "list-badges": async function (t) {
+  "card-badges": async function (t) {
     try {
-      const list = await t.list("id");
+      const card = await t.card("id", "idList");
       const limits = await getLimits(t);
-      const limit = limits[list.id];
+      const limit = limits[card.idList];
+      if (!limit) return [];
 
-      if (limit === undefined) {
-        return [
-          {
-            text: "No limits set · + Add",
-            color: null,
-            refresh: 5,
-            callback: (t) => openListLimitPopup(t, { id: list.id, limit: undefined }),
-          },
-        ];
+      const cards = await t.cards(card.idList);
+      const count = cards.length;
+      const isLastCard = cards.length > 0 && cards[cards.length - 1].id === card.id;
+
+      // Piggyback the list-header rename off this real capability call,
+      // since Trello has no capability that fires on card add/move directly.
+      if (isLastCard) {
+        renameListWithCount(t, card.idList, count, limit).catch(() => {});
       }
 
-      const count = await getCardCount(t, list.id);
-      const overLimit = count > limit;
+      if (!isLastCard) return [];
 
       return [
         {
-          text: `Max Cards: ${limit}`,
-          color: overLimit ? "red" : "blue",
-          refresh: 5,
-          callback: (t) => openListLimitPopup(t, { id: list.id, limit }),
+          text: `${count} / ${limit}`,
+          color: count > limit ? "red" : "green",
         },
       ];
     } catch (e) {
       return [];
-    }
-  },
-
-  "card-moved": async function (t, opts) {
-    try {
-      const listId = opts.to.list.id;
-      const limits = await getLimits(t);
-      const limit = limits[listId];
-      if (!limit) return;
-
-      const count = await getCardCount(t, listId);
-      if (count > limit) {
-        return t.alert({
-          message: `"${opts.to.list.name}" is over its limit (${count}/${limit}).`,
-          duration: 6,
-          display: "warning",
-        });
-      }
-    } catch (e) {
-      // fail silently
     }
   },
 });
