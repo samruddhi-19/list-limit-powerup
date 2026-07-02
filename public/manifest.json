@@ -1,0 +1,19 @@
+{
+  "name": "List Limit",
+  "details": "Set a WIP (work-in-progress) card limit per list and get warned when it's exceeded.",
+  "icon": {
+    "url": "https://cdn-icons-png.flaticon.com/512/1828/1828884.png"
+  },
+  "author": "your-name-here",
+  "capabilities": [
+    "authorization-status",
+    "show-authorization",
+    "show-settings",
+    "board-buttons",
+    "list-actions",
+    "list-badges",
+    "card-moved"
+  ],
+  "connectorName": "ListLimit",
+  "tags": ["productivity", "workflow"]
+}
