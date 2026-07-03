@@ -5,10 +5,19 @@
 
 const TRELLO_APP_KEY = import.meta.env.VITE_TRELLO_APP_KEY;
 
-const COUNT_SUFFIX_RE = /\s*\(\d+\/\d+\)\s*$/;
+// Matches an optional colour dot + "(n/n)" suffix so we can strip/replace it.
+const COUNT_SUFFIX_RE = /\s*(?:🟢|🟡|🔴)?\s*\(\d+\/\d+\)\s*$/;
 
 export function stripCountSuffix(name) {
   return name.replace(COUNT_SUFFIX_RE, "");
+}
+
+// Colour dot mirrors the "amber past the limit, red once exceeded" rule
+// from the popup, since a Power-Up can't recolor Trello's real list header.
+function countDot(count, limit) {
+  if (count > limit) return "🔴";
+  if (count === limit) return "🟡";
+  return "🟢";
 }
 
 export async function renameListWithCount(t, listId, count, limit) {
@@ -17,7 +26,9 @@ export async function renameListWithCount(t, listId, count, limit) {
 
   const list = await t.list("name");
   const baseName = stripCountSuffix(list.name);
-  const newName = limit ? `${baseName} (${count}/${limit})` : baseName;
+  const newName = limit
+    ? `${baseName} ${countDot(count, limit)} (${count}/${limit})`
+    : baseName;
 
   if (newName === list.name) return; // already correct, skip the write
 

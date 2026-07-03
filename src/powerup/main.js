@@ -1,5 +1,18 @@
 /* global TrelloPowerUp */
 import { getLimits, getCardCount } from "../lib/limits.js";
+import { renameListWithCount } from "../lib/trelloApi.js";
+
+// Trello doesn't give Power-Ups a hook to recolor its native list header,
+// so we keep the "count / limit" + colour dot written into the list's own
+// name in sync (see trelloApi.renameListWithCount). This refreshes both
+// sides of a move whenever cards get dragged between lists.
+async function syncListName(t, listId) {
+  const limits = await getLimits(t);
+  const limit = limits[listId];
+  if (!limit) return;
+  const count = await getCardCount(t, listId);
+  await renameListWithCount(t, listId, count, limit);
+}
 
 const ICON = "https://cdn-icons-png.flaticon.com/512/1828/1828884.png";
 
@@ -46,52 +59,38 @@ TrelloPowerUp.initialize({
   },
 
   "list-actions": function (t) {
-  return [
-    {
-      text: "Set Card Limit",
-      callback: function (t) {
-        const listId = t.getContext().list;
-        return t.popup({
-          title: "Set List Limit",
-          url: "./list-limit.html",
-          height: 340,
-          args: { listId: listId },
-        });
-      },
-    },
-  ];
-},
-
-  "list-badges": async function (t) {
-    try {
-      const list = await t.list("id");
-      const limits = await getLimits(t);
-      const limit = limits[list.id];
-      if (!limit) return [];
-
-      const count = await getCardCount(t, list.id);
-      const overLimit = count > limit;
-
-      return [
-        {
-          text: `${count} / ${limit}`,
-          color: overLimit ? "red" : "green",
-          refresh: 5,
+    return [
+      {
+        text: "Set Card Limit",
+        callback: function (t) {
+          const listId = t.getContext().list;
+          return t.popup({
+            title: "Set List Limit",
+            url: "./list-limit.html",
+            height: 340,
+            args: { listId: listId },
+          });
         },
-      ];
-    } catch (e) {
-      return [];
-    }
+      },
+    ];
   },
 
   "card-moved": async function (t, opts) {
     try {
-      const listId = opts.to.list.id;
+      const toListId = opts.to.list.id;
+      const fromListId = opts.from?.list?.id;
+
+      // Refresh the name badge on both ends of the move.
+      await syncListName(t, toListId);
+      if (fromListId && fromListId !== toListId) {
+        await syncListName(t, fromListId);
+      }
+
       const limits = await getLimits(t);
-      const limit = limits[listId];
+      const limit = limits[toListId];
       if (!limit) return;
 
-      const count = await getCardCount(t, listId);
+      const count = await getCardCount(t, toListId);
       if (count > limit) {
         return t.alert({
           message: `"${opts.to.list.name}" is over its limit (${count}/${limit}).`,

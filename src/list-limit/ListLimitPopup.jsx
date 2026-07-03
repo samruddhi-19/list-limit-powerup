@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getLimits, setLimitForList, getCardCount } from "../lib/limits.js";
+import { renameListWithCount } from "../lib/trelloApi.js";
 
 const MIN_LIMIT = 1;
 
@@ -74,6 +75,12 @@ export default function ListLimitPopup({ t }) {
         try {
           const count = await getCardCount(t, id);
           setCardCount(count);
+          // Opening this popup is also a good moment to resync the
+          // name badge, in case cards were added/archived directly
+          // in the list (no card-moved event fires for that).
+          if (limits[id] !== undefined) {
+            renameListWithCount(t, id, count, limits[id]).catch(() => {});
+          }
         } catch (e) {
           if (e.message === "NOT_AUTHORIZED") {
             setError("Connect your Trello account to see the card count.");
