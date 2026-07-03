@@ -49,11 +49,12 @@ TrelloPowerUp.initialize({
   return [
     {
       text: "Set Card Limit",
-      callback: function (t) {
-        // t.popup() must be called synchronously — no await/.then() before it —
-        // otherwise Trello won't close the native "List actions" menu and
-        // the two popups stack on screen. t.getContext() is synchronous.
+      callback: async function (t) {
         const listId = t.getContext().list;
+        // Close the native "List actions" popup stack first, so our
+        // popup doesn't get pushed on top of it (which is what caused
+        // the old menu to still show behind/below ours).
+        await t.closePopup();
         return t.popup({
           title: "Set List Limit",
           url: "./list-limit.html",
