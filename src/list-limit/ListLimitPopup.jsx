@@ -156,23 +156,6 @@ export default function ListLimitPopup({ t }) {
 
   return (
     <div style={styles.wrapper}>
-      <div style={styles.header}>
-        <div style={styles.headerTitle}>
-          {hadExistingLimit ? "Edit list limit" : "Set list limit"}
-        </div>
-        <button
-          type="button"
-          aria-label="Close"
-          style={styles.closeBtn}
-          onClick={() => t.closePopup()}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M18 6 6 18" />
-            <path d="M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
       <div style={styles.body}>
         <div style={styles.statusRow}>
           <div style={{ ...styles.iconBadge, background: state.bg }}>
