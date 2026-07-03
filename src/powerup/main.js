@@ -58,7 +58,7 @@ TrelloPowerUp.initialize({
         return t.popup({
           title: "Set List Limit",
           url: "./list-limit.html",
-          height: 180,
+          height: 480,
           args: { listId: listId },
         });
       },

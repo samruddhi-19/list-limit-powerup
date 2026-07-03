@@ -87,6 +87,10 @@ export default function ListLimitPopup({ t }) {
     load();
   }, [t]);
 
+   useEffect(() => {
+    t.sizeTo(document.body);
+  }, [cardCount, error, hadExistingLimit]);
+
   function clampToMin(n) {
     return Math.max(MIN_LIMIT, n);
   }
