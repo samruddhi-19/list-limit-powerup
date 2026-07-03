@@ -2,7 +2,7 @@
 // Limits are stored as one shared object on the board:
 // { "<listId>": 5, "<listId2>": 3 }
 
-import { clearListNameSuffix } from "./trelloApi.js";
+import { clearListNameSuffix, getCardsForList } from "./trelloApi.js";
 
 export async function getLimits(t) {
   const limits = await t.get("board", "shared", "listLimits");
@@ -32,7 +32,6 @@ export async function setAllLimits(t, limits) {
 }
 
 export async function getCardCount(t, listId) {
-  // t.cards is only available from a board-scoped context (e.g. list-badges)
-  const cards = await t.cards(listId);
+  const cards = await getCardsForList(t, listId);
   return cards.length;
 }

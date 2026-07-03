@@ -3,7 +3,7 @@
 // it into the list's own name via the REST API, using the member's stored
 // auth token from the real Trello authorization flow.
 
-const TRELLO_APP_KEY = "9d5e0c1473b99cfbb95fd63eba48cb3e"; // same key as src/auth/AuthPopup.jsx
+const TRELLO_APP_KEY = import.meta.env.VITE_TRELLO_APP_KEY;
 
 const COUNT_SUFFIX_RE = /\s*\(\d+\/\d+\)\s*$/;
 
@@ -41,4 +41,17 @@ function putListName(listId, token, name) {
     `?key=${TRELLO_APP_KEY}&token=${encodeURIComponent(token)}` +
     `&name=${encodeURIComponent(name)}`;
   return fetch(url, { method: "PUT" });
+}
+
+export async function getCardsForList(t, listId) {
+  const token = await t.get("member", "private", "token");
+  if (!token) return [];
+
+  const url =
+    `https://api.trello.com/1/lists/${listId}/cards` +
+    `?fields=id&key=${TRELLO_APP_KEY}&token=${encodeURIComponent(token)}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Trello API error: ${res.status}`);
+  return res.json();
 }

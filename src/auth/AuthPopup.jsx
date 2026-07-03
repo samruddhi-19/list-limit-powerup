@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 // Get this from https://trello.com/power-ups/admin -> your Power-Up -> API Key
-const TRELLO_APP_KEY = "9d5e0c1473b99cfbb95fd63eba48cb3e";
+const TRELLO_APP_KEY = import.meta.env.VITE_TRELLO_APP_KEY;
 const APP_NAME = "List Limiter";
 
 export default function AuthPopup({ t }) {
