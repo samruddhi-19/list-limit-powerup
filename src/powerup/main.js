@@ -45,23 +45,25 @@ TrelloPowerUp.initialize({
     ];
   },
 
-  "list-actions": function () {
-    return [
-      {
-        text: "Set Card Limit",
-        callback: function (t) {
-          return t.list("id", "name").then(function (list) {
-            return t.popup({
-              title: "Set Limit for " + list.name,
-              url: "./list-limit.html",
-              height: 180,
-              args: { listId: list.id },
-            });
-          });
-        },
+  "list-actions": function (t) {
+  return [
+    {
+      text: "Set Card Limit",
+      callback: function (t) {
+        // t.popup() must be called synchronously — no await/.then() before it —
+        // otherwise Trello won't close the native "List actions" menu and
+        // the two popups stack on screen. t.getContext() is synchronous.
+        const listId = t.getContext().list;
+        return t.popup({
+          title: "Set List Limit",
+          url: "./list-limit.html",
+          height: 180,
+          args: { listId: listId },
+        });
       },
-    ];
-  },
+    },
+  ];
+},
 
   "list-badges": async function (t) {
     try {
