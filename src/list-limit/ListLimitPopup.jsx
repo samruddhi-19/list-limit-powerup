@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getLimits, setLimitForList } from "../lib/limits.js";
+import { getLimits, setLimitForList, getCardCount } from "../lib/limits.js";
 
 const MIN_LIMIT = 1;
 
@@ -8,6 +8,7 @@ export default function ListLimitPopup({ t }) {
   const [listName, setListName] = useState("");
   const [value, setValue] = useState(""); // "" = no limit set yet
   const [hadExistingLimit, setHadExistingLimit] = useState(false);
+  const [cardCount, setCardCount] = useState(null); // null = loading
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const inputRef = useRef(null);
@@ -30,6 +31,15 @@ export default function ListLimitPopup({ t }) {
         setListName(list.name);
       } catch (e) {
         // t.list() isn't available in every popup context; ignore.
+      }
+
+      if (id) {
+        try {
+          const count = await getCardCount(t, id);
+          setCardCount(count);
+        } catch (e) {
+          setCardCount(0);
+        }
       }
 
       requestAnimationFrame(() => {
@@ -93,68 +103,119 @@ export default function ListLimitPopup({ t }) {
     if (e.key === "Escape") t.closePopup();
   }
 
+  const limitNum = Number(value) || 0;
+  const count = cardCount ?? 0;
+  const overLimit = limitNum > 0 && count > limitNum;
+  const remaining = limitNum > 0 ? limitNum - count : null;
+  const progressPct =
+    limitNum > 0 ? Math.min(100, Math.round((count / limitNum) * 100)) : 0;
+  const progressColor = overLimit ? "#C9372C" : "#57A55A";
+  const remainingColor = overLimit ? "#C9372C" : "#3B6D11";
+
   return (
     <div style={styles.wrapper}>
-      <div style={styles.label}>
-        {hadExistingLimit ? "Edit max cards" : "Set max cards"}
-        {listName ? <span style={styles.listName}> · {listName}</span> : null}
+      <div style={styles.header}>
+        <div style={styles.headerText}>
+          <div style={styles.title}>
+            {hadExistingLimit ? "Edit list limit" : "Set list limit"}
+          </div>
+          {listName ? <div style={styles.subtitle}>{listName}</div> : null}
+        </div>
+        <button
+          type="button"
+          aria-label="Close"
+          style={styles.closeBtn}
+          onClick={() => t.closePopup()}
+        >
+          ×
+        </button>
       </div>
 
-      <div style={styles.controlsRow}>
+      <div style={styles.divider} />
+
+      <div style={styles.body}>
+        <div style={styles.sectionLabel}>Card limit</div>
+
+        <div style={styles.stepperRow}>
+          <div style={styles.stepperGroup}>
+            <button
+              type="button"
+              aria-label="Decrease"
+              style={{ ...styles.stepperBtn, ...styles.stepperBtnLeft }}
+              onClick={() => step(-1)}
+              disabled={saving || Number(value) <= MIN_LIMIT}
+            >
+              −
+            </button>
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="numeric"
+              value={value}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              style={styles.input}
+              disabled={saving}
+            />
+            <button
+              type="button"
+              aria-label="Increase"
+              style={{ ...styles.stepperBtn, ...styles.stepperBtnRight }}
+              onClick={() => step(1)}
+              disabled={saving}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div style={styles.progressLabelRow}>
+          <span style={styles.progressLabel}>
+            {cardCount === null
+              ? "Loading cards…"
+              : `${count} of ${limitNum || "–"} cards`}
+          </span>
+          {limitNum > 0 && cardCount !== null ? (
+            <span style={{ ...styles.progressRight, color: remainingColor }}>
+              {overLimit ? `${count - limitNum} over` : `${remaining} left`}
+            </span>
+          ) : null}
+        </div>
+
+        <div style={styles.progressTrack}>
+          <div
+            style={{
+              ...styles.progressFill,
+              width: `${progressPct}%`,
+              background: progressColor,
+            }}
+          />
+        </div>
+
+        {error ? <div style={styles.error}>{error}</div> : null}
+
         <button
           type="button"
-          aria-label="Decrease"
-          style={styles.stepperBtn}
-          onClick={() => step(-1)}
-          disabled={saving || Number(value) <= MIN_LIMIT}
-        >
-          −
-        </button>
-
-        <input
-          ref={inputRef}
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          style={styles.input}
-          disabled={saving}
-        />
-
-        <button
-          type="button"
-          aria-label="Increase"
-          style={styles.stepperBtn}
-          onClick={() => step(1)}
-          disabled={saving}
-        >
-          +
-        </button>
-
-        <button
-          type="button"
-          aria-label="Confirm"
-          style={{ ...styles.confirmBtn, ...(saving ? styles.disabled : {}) }}
+          style={{ ...styles.saveBtn, ...(saving ? styles.disabled : {}) }}
           onClick={handleConfirm}
           disabled={saving}
         >
-          ✓
+          {saving ? "Saving…" : "Save limit"}
         </button>
+
+        {hadExistingLimit ? (
+          <div style={styles.removeRow}>
+            <button
+              type="button"
+              style={styles.removeLink}
+              onClick={handleRemoveLimit}
+              disabled={saving}
+            >
+              Remove limit
+            </button>
+          </div>
+        ) : null}
       </div>
-
-      {error ? <div style={styles.error}>{error}</div> : null}
-
-      {hadExistingLimit ? (
-        <button
-          type="button"
-          style={styles.removeLink}
-          onClick={handleRemoveLimit}
-          disabled={saving}
-        >
-          Remove limit
-        </button>
-      ) : null}
     </div>
   );
 }
@@ -163,53 +224,118 @@ const styles = {
   wrapper: {
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
-    padding: "14px 16px",
     boxSizing: "border-box",
+    background: "#FFFFFF",
   },
-  label: { fontSize: 13, fontWeight: 600, color: "#172b4d", marginBottom: 10 },
-  listName: { fontWeight: 400, color: "#6b778c" },
-  controlsRow: { display: "flex", alignItems: "center", gap: 6 },
-  stepperBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    border: "1px solid #dfe1e6",
-    background: "#f4f5f7",
-    fontSize: 16,
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "14px 16px 12px",
+  },
+  headerText: { minWidth: 0 },
+  title: { fontSize: 14, fontWeight: 600, color: "#172B4D" },
+  subtitle: {
+    fontSize: 12,
+    color: "#8590A2",
+    marginTop: 1,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  closeBtn: {
+    border: "none",
+    background: "none",
+    fontSize: 20,
     lineHeight: 1,
+    color: "#8590A2",
     cursor: "pointer",
-    color: "#172b4d",
+    flexShrink: 0,
+    padding: 0,
   },
-  input: {
-    width: 56,
-    height: 30,
+  divider: { height: 1, background: "#EBECF0" },
+  body: { padding: "18px 16px 16px" },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "#8590A2",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    marginBottom: 10,
     textAlign: "center",
-    fontSize: 15,
-    borderRadius: 6,
-    border: "1px solid #dfe1e6",
+  },
+  stepperRow: {
+    display: "flex",
+    alignItems: "stretch",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  stepperGroup: {
+    display: "flex",
+    border: "1px solid #DFE1E6",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  stepperBtn: {
+    width: 38,
+    border: "none",
+    background: "#FAFBFC",
+    fontSize: 16,
+    color: "#44546F",
+    cursor: "pointer",
+  },
+  stepperBtnLeft: { borderRight: "1px solid #DFE1E6" },
+  stepperBtnRight: { borderLeft: "1px solid #DFE1E6" },
+  input: {
+    width: 64,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: 600,
+    color: "#172B4D",
+    background: "#FFFFFF",
+    border: "none",
     outline: "none",
   },
-  confirmBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
+  progressLabelRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "baseline",
+    marginBottom: 6,
+  },
+  progressLabel: { fontSize: 12, color: "#44546F", fontWeight: 500 },
+  progressRight: { fontSize: 12, fontWeight: 600 },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    background: "#EBECF0",
+    overflow: "hidden",
+    marginBottom: 20,
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 3,
+    transition: "width 0.2s ease",
+  },
+  saveBtn: {
+    width: "100%",
+    height: 36,
+    borderRadius: 8,
     border: "none",
-    background: "#0079bf",
-    color: "#fff",
-    fontSize: 15,
+    background: "#172B4D",
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: 600,
     cursor: "pointer",
-    marginLeft: 4,
   },
   disabled: { opacity: 0.6, cursor: "default" },
-  error: { marginTop: 8, fontSize: 12, color: "#c9372c" },
+  error: { marginBottom: 10, fontSize: 12, color: "#C9372C" },
+  removeRow: { display: "flex", justifyContent: "center", marginTop: 10 },
   removeLink: {
-    marginTop: 12,
     background: "none",
     border: "none",
-    color: "#6b778c",
+    color: "#8590A2",
     fontSize: 12,
     cursor: "pointer",
     padding: 0,
-    textDecoration: "underline",
   },
 };

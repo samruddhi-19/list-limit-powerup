@@ -17,7 +17,7 @@ TrelloPowerUp.initialize({
     return t.popup({
       title: "Authorize List Limit Power-Up",
       url: "./auth.html",
-      height: 200,
+      height: 340,
     });
   },
 
