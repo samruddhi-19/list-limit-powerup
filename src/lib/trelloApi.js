@@ -45,7 +45,7 @@ function putListName(listId, token, name) {
 
 export async function getCardsForList(t, listId) {
   const token = await t.get("member", "private", "token");
-  if (!token) return [];
+  if (!token) throw new Error("NOT_AUTHORIZED");
 
   const url =
     `https://api.trello.com/1/lists/${listId}/cards` +

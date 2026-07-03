@@ -75,6 +75,11 @@ export default function ListLimitPopup({ t }) {
           const count = await getCardCount(t, id);
           setCardCount(count);
         } catch (e) {
+          if (e.message === "NOT_AUTHORIZED") {
+            setError("Connect your Trello account to see the card count.");
+          } else {
+            setError("Couldn't load card count. Try again.");
+          }
           setCardCount(0);
         }
       }
