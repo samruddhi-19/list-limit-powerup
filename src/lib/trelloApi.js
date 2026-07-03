@@ -3,7 +3,7 @@
 // it into the list's own name via the REST API, using the member's stored
 // auth token from the real Trello authorization flow.
 
-const TRELLO_APP_KEY = ""; // same key as src/auth/AuthPopup.jsx
+const TRELLO_APP_KEY = "9d5e0c1473b99cfbb95fd63eba48cb3e"; // same key as src/auth/AuthPopup.jsx
 
 const COUNT_SUFFIX_RE = /\s*\(\d+\/\d+\)\s*$/;
 
