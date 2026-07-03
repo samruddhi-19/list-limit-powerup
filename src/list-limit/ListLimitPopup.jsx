@@ -52,7 +52,7 @@ export default function ListLimitPopup({ t }) {
 
   useEffect(() => {
     async function load() {
-      const { listId: id } = t.getContext().arguments || {};
+      const id = t.arg("listId");
       setListId(id);
 
       const limits = await getLimits(t);

@@ -35,7 +35,8 @@ export default function AuthPopup({ t }) {
   }
 
   function redirectAfterConnect() {
-    const { redirect, listId } = t.getContext().arguments || {};
+    const redirect = t.arg("redirect");
+    const listId = t.arg("listId");
 
     if (redirect === "settings") {
       return t.popup({
